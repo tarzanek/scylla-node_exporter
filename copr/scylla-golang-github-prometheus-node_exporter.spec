@@ -276,6 +276,6 @@ export GOPATH=%{buildroot}/%{gopath}:$(pwd)/vendor:%{gopath}
 %endif
 
 %changelog
-* Thu Aug 05 2019 Lubos Kosco <tarzanek@gmail.com> 0.17.0
+* Mon Aug 05 2019 Lubos Kosco <tarzanek@gmail.com> 0.17.0
 - initial scylla packaging
 
