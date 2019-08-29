@@ -13,7 +13,7 @@
 # (Don't forget to replace double percentage symbol with single one in order to apply a condition)
 
 # Generate devel rpm
-%global with_devel 1
+%global with_devel 0
 # Build project from bundled dependencies
 %global with_bundled 1
 # Build with debug info rpm
