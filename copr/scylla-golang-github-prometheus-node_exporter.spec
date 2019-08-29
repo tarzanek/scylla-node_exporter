@@ -40,11 +40,13 @@
 #%global commit          0e60bb8e005c638605e59ac3f307e3d47e891a9f
 #%global shortcommit     %(c=%{commit}; echo ${c:0:7})
 
+%global scylladir /opt/scylladb
+
 Name:           scylla-%{repo}
 Version:        0.17.0
 Release:        6%{?dist}
 Summary:        Exporter for machine metrics
-License:        ASL 3.0
+License:        AGPL 3.0
 URL:            https://%{provider_prefix}
 #Source0:        https://%{provider_prefix}/archive/%{commit}/%{repo}-%{shortcommit}.tar.gz
 Source0:        https://%{provider_prefix}/archive/v%{version}.tar.gz
@@ -82,7 +84,7 @@ BuildRequires: golang(github.com/prometheus/client_model/go)
 BuildRequires: golang(github.com/prometheus/common/expfmt)
 BuildRequires: golang(github.com/prometheus/common/log)
 BuildRequires: golang(github.com/prometheus/procfs)
-#BuildRequires: golang(github.com/soundcloud/go-runit/runit)
+BuildRequires: golang(github.com/soundcloud/go-runit/runit)
 BuildRequires: golang(golang.org/x/sys/unix)
 %endif
 
@@ -97,7 +99,7 @@ Requires:      golang(github.com/prometheus/client_model/go)
 Requires:      golang(github.com/prometheus/common/expfmt)
 Requires:      golang(github.com/prometheus/common/log)
 Requires:      golang(github.com/prometheus/procfs)
-#Requires:      golang(github.com/soundcloud/go-runit/runit)
+Requires:      golang(github.com/soundcloud/go-runit/runit)
 Requires:      golang(golang.org/x/sys/unix)
 
 Provides:      golang(%{import_path}/collector) = %{version}-%{release}
@@ -161,30 +163,40 @@ function _gobuild { go build -a -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -
 %global gobuild _gobuild
 %endif
 
+# below is due to bug https://github.com/prometheus/node_exporter/issues/1420
+echo "
+50c50
+< github.com/soundcloud/go-runit v0.0.0-20150630195641-06ad41a06c4a h1:TGsOnmXp0mo82KbjaDcsTibGxWIdZNXbKJB18gFn1RM=
+---
+> github.com/soundcloud/go-runit v0.0.0-20150630195641-06ad41a06c4a h1:os5OBNhwOwybXZMNLqT96XqtjdTtwRFw2w08uluvNeI=
+" > patch.go.sum
+
+patch go.sum < patch.go.sum
+
 %gobuild -o _build/node_exporter %{provider_prefix}
 
 %install
-install -d -p   %{buildroot}%{_bindir} \
-                %{buildroot}%{_defaultdocdir}/node_exporter
+install -d -p   %{buildroot}/%{scylladir}/%{_bindir} \
+                %{buildroot}/%{scylladir}/%{_defaultdocdir}/node_exporter
 
 %if 0%{?rhel} != 6
-install -d -p   %{buildroot}%{_unitdir}
+install -d -p   %{buildroot}/%{_unitdir}
 %endif
 
 %if 0%{?rhel} != 6
-install -p -m 0644 %{_sourcedir}/node_exporter.service %{buildroot}%{_unitdir}/node_exporter.service
+install -p -m 0644 %{_sourcedir}/scylla-node_exporter.service %{buildroot}/%{_unitdir}/scylla-node_exporter.service
 %endif
-install -p -m 0755 ./_build/node_exporter %{buildroot}%{_bindir}/node_exporter
+install -p -m 0755 ./_build/node_exporter %{buildroot}/%{scylladir}/%{_bindir}/node_exporter
 
 # source codes for building projects
 %if 0%{?with_devel}
-install -d -p %{buildroot}/%{gopath}/src/%{import_path}/
+install -d -p %{buildroot}/%{scylladir}/%{gopath}/src/%{import_path}/
 echo "%%dir %%{gopath}/src/%%{import_path}/." >> devel.file-list
 # find all *.go but no *_test.go files and generate devel.file-list
 for file in $(find . \( -iname "*.go" -or -iname "*.s" \) \! -iname "*_test.go" | grep -v "vendor") ; do
     dirprefix=$(dirname $file)
-    install -d -p %{buildroot}/%{gopath}/src/%{import_path}/$dirprefix
-    cp -pav $file %{buildroot}/%{gopath}/src/%{import_path}/$file
+    install -d -p %{buildroot}/%{scylladir}/%{gopath}/src/%{import_path}/$dirprefix
+    cp -pav $file %{buildroot}/%{scylladir}/%{gopath}/src/%{import_path}/$file
     echo "%%{gopath}/src/%%{import_path}/$file" >> devel.file-list
 
     while [ "$dirprefix" != "." ]; do
@@ -196,12 +208,12 @@ done
 
 # testing files for this project
 %if 0%{?with_unit_test} && 0%{?with_devel}
-install -d -p %{buildroot}/%{gopath}/src/%{import_path}/
+install -d -p %{buildroot}/%{scylladir}/%{gopath}/src/%{import_path}/
 # find all *_test.go files and generate unit-test-devel.file-list
 for file in $(find . -iname "*_test.go" | grep -v "vendor") ; do
     dirprefix=$(dirname $file)
-    install -d -p %{buildroot}/%{gopath}/src/%{import_path}/$dirprefix
-    cp -pav $file %{buildroot}/%{gopath}/src/%{import_path}/$file
+    install -d -p %{buildroot}/%{scylladir}/%{gopath}/src/%{import_path}/$dirprefix
+    cp -pav $file %{buildroot}/%{scylladir}/%{gopath}/src/%{import_path}/$file
     echo "%%{gopath}/src/%%{import_path}/$file" >> unit-test-devel.file-list
 
     while [ "$dirprefix" != "." ]; do
@@ -218,7 +230,7 @@ sort -u -o devel.file-list devel.file-list
 %check
 %if 0%{?with_check} && 0%{?with_unit_test} && 0%{?with_devel}
 %if ! 0%{?with_bundled}
-export GOPATH=%{buildroot}/%{gopath}:%{gopath}
+export GOPATH=%{buildroot}/%{scylladir}/%{gopath}:%{gopath}
 %else
 # Since we aren't packaging up the vendor directory we need to link
 # back to it somehow. Hack it up so that we can add the vendor
@@ -226,7 +238,7 @@ export GOPATH=%{buildroot}/%{gopath}:%{gopath}
 # tests from the BUILDROOT dir.
 ln -s ./ ./vendor/src # ./vendor/src -> ./vendor
 
-export GOPATH=%{buildroot}/%{gopath}:$(pwd)/vendor:%{gopath}
+export GOPATH=%{buildroot}/%{scylladir}/%{gopath}:$(pwd)/vendor:%{gopath}
 %endif
 
 %if ! 0%{?gotest:1}
@@ -251,28 +263,26 @@ export GOPATH=%{buildroot}/%{gopath}:$(pwd)/vendor:%{gopath}
 
 %files
 %if 0%{?rhel} != 6
-%{_unitdir}/node_exporter.service
+%{_unitdir}/scylla-node_exporter.service
 %endif
-%config(noreplace) %{_sysconfdir}/sysconfig/node_exporter
-%license LICENSE.AGPL
-%doc *.md
-%{_sbindir}/*
+%license LICENSE
+%{scylladir}/*
 
 %pre
 
 %post
 %if 0%{?rhel} != 6
-%systemd_post node_exporter.service
+%systemd_post scylla-node_exporter.service
 %endif
 
 %preun
 %if 0%{?rhel} != 6
-%systemd_preun node_exporter.service
+%systemd_preun scylla-node_exporter.service
 %endif
 
 %postun
 %if 0%{?rhel} != 6
-%systemd_postun node_exporter.service
+%systemd_postun scylla-node_exporter.service
 %endif
 
 %changelog
