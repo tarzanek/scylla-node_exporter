@@ -82,7 +82,7 @@ BuildRequires: golang(github.com/prometheus/client_model/go)
 BuildRequires: golang(github.com/prometheus/common/expfmt)
 BuildRequires: golang(github.com/prometheus/common/log)
 BuildRequires: golang(github.com/prometheus/procfs)
-BuildRequires: golang(github.com/soundcloud/go-runit/runit)
+#BuildRequires: golang(github.com/soundcloud/go-runit/runit)
 BuildRequires: golang(golang.org/x/sys/unix)
 %endif
 
@@ -97,7 +97,7 @@ Requires:      golang(github.com/prometheus/client_model/go)
 Requires:      golang(github.com/prometheus/common/expfmt)
 Requires:      golang(github.com/prometheus/common/log)
 Requires:      golang(github.com/prometheus/procfs)
-Requires:      golang(github.com/soundcloud/go-runit/runit)
+#Requires:      golang(github.com/soundcloud/go-runit/runit)
 Requires:      golang(golang.org/x/sys/unix)
 
 Provides:      golang(%{import_path}/collector) = %{version}-%{release}
