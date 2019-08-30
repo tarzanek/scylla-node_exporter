@@ -6,7 +6,6 @@ Type=simple
 User=scylla
 Group=scylla
 ExecStart=/opt/scylladb/bin/node_exporter --collector.interrupts
-Restart=always
 
 [Install]
 WantedBy=multi-user.target
