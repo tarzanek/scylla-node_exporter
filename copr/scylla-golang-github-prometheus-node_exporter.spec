@@ -176,8 +176,8 @@ patch go.sum < patch.go.sum
 %gobuild -o _build/node_exporter %{provider_prefix}
 
 %install
-install -d -p   %{buildroot}/%{scylladir}/%{_bindir} \
-                %{buildroot}/%{scylladir}/%{_defaultdocdir}/node_exporter
+install -d -p   %{buildroot}/%{scylladir}/bin
+#                %{buildroot}/%{scylladir}/%{_defaultdocdir}/node_exporter
 
 %if 0%{?rhel} != 6
 install -d -p   %{buildroot}/%{_unitdir}
@@ -186,7 +186,7 @@ install -d -p   %{buildroot}/%{_unitdir}
 %if 0%{?rhel} != 6
 install -p -m 0644 %{_sourcedir}/scylla-node_exporter.service %{buildroot}/%{_unitdir}/scylla-node_exporter.service
 %endif
-install -p -m 0755 ./_build/node_exporter %{buildroot}/%{scylladir}/%{_bindir}/node_exporter
+install -p -m 0755 ./_build/node_exporter %{buildroot}/%{scylladir}/bin/node_exporter
 
 # source codes for building projects
 %if 0%{?with_devel}
